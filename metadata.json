@@ -1,0 +1,6 @@
+{
+  "name": "Pilah Sampah RT 005",
+  "description": "Sistem informasi pengelolaan dan penukaran poin program pilah sampah warga RT 005 RW 013, Taman Buaran Indah IV.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
