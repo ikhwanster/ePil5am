@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Leaf, User, Shield, BookOpen, Trophy, Calendar, Sparkles, MessageSquare,
   History, PlusCircle, AlertCircle, ShoppingBag, ArrowUpRight, Scale,
-  LogOut, Bell, Check, X, ShieldCheck, Download, Trash2
+  LogOut, Bell, Check, X, ShieldCheck, Download, Trash2, Menu, Settings, Info, RefreshCw
 } from 'lucide-react';
 import {
   INITIAL_CITIZENS,
@@ -64,6 +64,20 @@ export default function App() {
 
   // Active main tab in citizen view
   const [activeCitizenTab, setActiveCitizenTab] = useState<'dashboard' | 'rewards' | 'schedule' | 'leaderboard' | 'feedback' | 'secure_export'>('dashboard');
+
+  // Window size tracker for responsive UI/UX
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isMobileNotificationsOpen, setIsMobileNotificationsOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const checkSize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
 
   // Active Toast list
   const [toasts, setToasts] = useState<{ id: string; title: string; message: string; type: string }[]>([]);
@@ -313,6 +327,16 @@ export default function App() {
     addCenterNotification(title, message, type);
   };
 
+  // ADMIN ACTION: Reset waste data back to zero (0)
+  const handleResetWasteData = () => {
+    setCitizens(prev => prev.map(c => ({
+      ...c,
+      totalWasteKg: 0
+    })));
+    setDeposits([]);
+    addToast('♻️ Data Sampah Direset', 'Semua data setoran sampah warga telah berhasil direset ke nol (0).', 'success');
+  };
+
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased" id="app-root">
@@ -351,30 +375,54 @@ export default function App() {
       
       {/* Top Application Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between gap-4">
           
           {/* Logo & Identity */}
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white shrink-0">
               <Leaf className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-sm font-bold leading-none text-emerald-900 uppercase tracking-wider">ePil5am</h1>
-              <p className="text-[10px] text-slate-400 font-medium uppercase mt-0.5">RT 005 RW 013 • Taman Buaran Indah IV</p>
+              <h1 className="text-xs md:text-sm font-bold leading-none text-emerald-900 uppercase tracking-wider">ePil5am</h1>
+              <p className="text-[9px] md:text-[10px] text-slate-400 font-medium uppercase mt-0.5">RT 005 RW 013 • Taman Buaran Indah IV</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* Mobile Notification Bell */}
+            {isMobile && isLoggedIn && (
+              <button
+                onClick={() => setIsMobileNotificationsOpen(true)}
+                className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl relative cursor-pointer"
+                title="Notifikasi"
+              >
+                <Bell className="w-4.5 h-4.5" />
+                {notifications.filter(n => !n.isRead).length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full scale-90">
+                    {notifications.filter(n => !n.isRead).length}
+                  </span>
+                )}
+              </button>
+            )}
+
             {/* Active Mode Indicator / Badge */}
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/50">
+            <div 
+              className="flex items-center gap-1 bg-slate-100 p-0.5 md:p-1 rounded-xl border border-slate-200/50 cursor-pointer hover:bg-slate-200/50 transition-colors"
+              onClick={() => {
+                const targetRole = userRole === 'warga' ? 'admin' : 'warga';
+                setUserRole(targetRole);
+                addToast('🔄 Peran Dialihkan', `Sekarang berada di mode ${targetRole === 'warga' ? 'Warga' : 'Admin RT'}`, 'success');
+              }}
+              title="Klik untuk ganti peran"
+            >
               {userRole === 'warga' ? (
-                <div className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-emerald-900 shadow-sm border border-slate-200/50 flex items-center gap-1">
-                  <User className="w-3.5 h-3.5" />
+                <div className="px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-[10px] md:text-xs font-bold bg-white text-emerald-900 shadow-sm border border-slate-200/50 flex items-center gap-1">
+                  <User className="w-3 md:w-3.5 h-3 md:h-3.5" />
                   <span>Warga</span>
                 </div>
               ) : (
-                <div className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-900 text-white shadow-sm flex items-center gap-1">
-                  <Shield className="w-3.5 h-3.5" />
+                <div className="px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-[10px] md:text-xs font-bold bg-slate-900 text-white shadow-sm flex items-center gap-1">
+                  <Shield className="w-3 md:w-3.5 h-3 md:h-3.5" />
                   <span>Admin RT</span>
                 </div>
               )}
@@ -397,14 +445,14 @@ export default function App() {
       </header>
 
       {/* Main Body Layout */}
-      <main className="max-w-5xl mx-auto p-6 pb-24">
+      <main className="max-w-5xl mx-auto p-4 md:p-6 pb-28 lg:pb-24">
         
         {/* Citizen View */}
         {userRole === 'warga' ? (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
             
-            {/* Sidebar Navigation */}
-            <div className="md:col-span-1 bg-white border border-slate-200 p-5 rounded-2xl space-y-1.5 shadow-sm">
+            {/* Sidebar Navigation - Desktop Only */}
+            <div className="hidden lg:block lg:col-span-1 bg-white border border-slate-200 p-5 rounded-2xl space-y-1.5 shadow-sm">
               <div className="px-2 py-1.5 border-b border-slate-100 mb-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Menu Warga</span>
                 {activeCitizen && (
@@ -440,7 +488,7 @@ export default function App() {
             </div>
 
             {/* Main Content Area */}
-            <div className="md:col-span-3 space-y-6">
+            <div className="col-span-1 lg:col-span-3 space-y-6">
               
               {/* Citizen Active Tab Router */}
               {activeCitizenTab === 'dashboard' && (
@@ -700,6 +748,7 @@ export default function App() {
             onCancelRedemption={handleCancelRedemption}
             onPushSystemNotification={handlePushSystemNotification}
             onUpdateCitizens={setCitizens}
+            onResetWasteData={handleResetWasteData}
           />
         )}
       </main>
@@ -730,8 +779,8 @@ export default function App() {
         </AnimatePresence>
       </div>
 
-      {/* Floating Panel showing Notification Center (Active notifications feed) */}
-      <div className="fixed bottom-4 left-4 z-45">
+      {/* Floating Panel showing Notification Center (Active notifications feed) - Desktop Only */}
+      <div className="hidden lg:block fixed bottom-4 left-4 z-45">
         <div className="relative group">
           <div className="bg-slate-900 text-white p-3.5 rounded-full shadow-lg hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center relative">
             <Bell className="w-5 h-5" />
@@ -773,6 +822,238 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* Bottom Navigation Bar for Mobile Warga Mode */}
+      {isMobile && isLoggedIn && userRole === 'warga' && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-xl px-2 py-2 flex justify-around items-center">
+          {[
+            { id: 'dashboard', label: 'Beranda', icon: BookOpen },
+            { id: 'rewards', label: 'Hadiah', icon: ShoppingBag },
+            { id: 'schedule', label: 'Jadwal', icon: Calendar },
+            { id: 'leaderboard', label: 'Skor', icon: Trophy },
+            { id: 'more', label: 'Menu', icon: Menu }
+          ].map(tab => {
+            const IconComp = tab.icon;
+            const isActive = tab.id === 'more' ? isMobileMenuOpen : (activeCitizenTab === tab.id && !isMobileMenuOpen);
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (tab.id === 'more') {
+                    setIsMobileMenuOpen(prev => !prev);
+                  } else {
+                    setActiveCitizenTab(tab.id as any);
+                    setIsMobileMenuOpen(false);
+                  }
+                }}
+                className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-2xl transition-all cursor-pointer ${
+                  isActive
+                    ? 'text-emerald-700 bg-emerald-50 font-extrabold'
+                    : 'text-slate-400 hover:text-slate-600 font-bold'
+                }`}
+              >
+                <IconComp className="w-5 h-5 shrink-0" />
+                <span className="text-[10px] tracking-wide">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Mobile Drawer/Modal Menu "Lainnya" */}
+      <AnimatePresence>
+        {isMobile && isLoggedIn && isMobileMenuOpen && (
+          <div className="fixed inset-0 z-50 flex flex-col justify-end bg-slate-900/60 backdrop-blur-xs">
+            {/* Backdrop Tap to Close */}
+            <div className="absolute inset-0" onClick={() => setIsMobileMenuOpen(false)} />
+
+            {/* Slide-Up Container */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="bg-white rounded-t-3xl border-t border-slate-200 p-6 space-y-5 z-10 shadow-2xl pb-10"
+            >
+              {/* Header Indicator */}
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto cursor-pointer" onClick={() => setIsMobileMenuOpen(false)} />
+              
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div>
+                  <h3 className="text-sm font-black text-slate-800">Menu Tambahan Warga</h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">{activeCitizen?.name} • RT 005</p>
+                </div>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Action Buttons list */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => {
+                    setActiveCitizenTab('feedback');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`p-4 border rounded-2xl flex flex-col items-start gap-2.5 text-left transition-all ${
+                    activeCitizenTab === 'feedback'
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                      : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                  }`}
+                >
+                  <MessageSquare className="w-5 h-5 text-emerald-600" />
+                  <div>
+                    <span className="text-xs font-bold block">Evaluasi & Saran</span>
+                    <span className="text-[10px] text-slate-500 leading-normal block mt-0.5">Beri rating pelayanan RT</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveCitizenTab('secure_export');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`p-4 border rounded-2xl flex flex-col items-start gap-2.5 text-left transition-all ${
+                    activeCitizenTab === 'secure_export'
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                      : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                  }`}
+                >
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                  <div>
+                    <span className="text-xs font-bold block">Keamanan & Ekspor</span>
+                    <span className="text-[10px] text-slate-500 leading-normal block mt-0.5">Enkripsi & Backup data</span>
+                  </div>
+                </button>
+              </div>
+
+              {/* Quick Preferences Card */}
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3.5">
+                <div className="flex justify-between items-center text-xs">
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 text-slate-500" />
+                    <span className="font-bold text-slate-700">Alihkan ke Mode Admin RT</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setUserRole('admin');
+                      setIsMobileMenuOpen(false);
+                      addToast('🛡️ Mode Pengurus RT', 'Sekarang Anda masuk sebagai Admin RT 005.', 'success');
+                    }}
+                    className="py-1 px-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-[10px]"
+                  >
+                    Buka Konsol
+                  </button>
+                </div>
+
+                <div className="flex justify-between items-center text-xs pt-3.5 border-t border-slate-200/60">
+                  <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 text-slate-500" />
+                    <span className="font-bold text-slate-700">Panduan Sampah Terpilah</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActiveCitizenTab('dashboard');
+                      setIsMobileMenuOpen(false);
+                      setTimeout(() => {
+                        const el = document.getElementById('composition-infographics');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }, 200);
+                    }}
+                    className="py-1 px-3 border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold rounded-xl text-[10px]"
+                  >
+                    Lihat Info
+                  </button>
+                </div>
+              </div>
+
+              {/* Red-labeled Logout Action */}
+              <button
+                onClick={() => {
+                  setIsLoggedIn(false);
+                  setIsMobileMenuOpen(false);
+                  addToast('🚪 Sesi Diakhiri', 'Sesi login Anda berhasil ditutup.', 'info');
+                }}
+                className="w-full py-3 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" /> Keluar dari Aplikasi
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Drawer/Modal Menu "Notifikasi" */}
+      <AnimatePresence>
+        {isMobile && isLoggedIn && isMobileNotificationsOpen && (
+          <div className="fixed inset-0 z-50 flex flex-col justify-end bg-slate-900/60 backdrop-blur-xs">
+            {/* Backdrop Tap to Close */}
+            <div className="absolute inset-0" onClick={() => setIsMobileNotificationsOpen(false)} />
+
+            {/* Slide-Up Container */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="bg-white rounded-t-3xl border-t border-slate-200 p-6 space-y-4 z-10 shadow-2xl pb-10 max-h-[80vh] flex flex-col"
+            >
+              {/* Header Indicator */}
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto shrink-0 cursor-pointer" onClick={() => setIsMobileNotificationsOpen(false)} />
+              
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3 shrink-0">
+                <div>
+                  <h3 className="text-sm font-black text-slate-800">Notifikasi Real-Time</h3>
+                  <p className="text-[10px] text-slate-400 font-medium uppercase mt-0.5">Informasi & Update Pengurus RT</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+                    addToast('✓ Dibaca', 'Semua notifikasi ditandai telah dibaca.', 'info');
+                  }}
+                  className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer"
+                >
+                  Tandai semua dibaca
+                </button>
+              </div>
+
+              {/* Scrollable list content */}
+              <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 py-1">
+                {notifications.length > 0 ? (
+                  notifications.map(notif => (
+                    <div
+                      key={notif.id}
+                      className={`p-3.5 rounded-2xl border text-xs space-y-1 transition-colors ${
+                        notif.isRead ? 'bg-slate-50/50 border-slate-100 text-slate-500' : 'bg-emerald-50/30 border-emerald-100/80 text-slate-800 shadow-xs'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="font-bold leading-tight text-slate-800 block">{notif.title}</span>
+                        <span className="text-[9px] font-mono text-slate-400 shrink-0">{notif.date.substring(11)}</span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-slate-600 mt-1">{notif.message}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-10 text-xs text-slate-400 font-medium">
+                    Belum ada notifikasi baru untuk Anda.
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => setIsMobileNotificationsOpen(false)}
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 mt-2"
+              >
+                Tutup Notifikasi
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

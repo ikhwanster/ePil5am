@@ -4,7 +4,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, 
 import {
   ShieldAlert, Check, X, Shield, Lock, Unlock, HelpCircle, AlertCircle,
   BarChart3, Users, Star, Gift, CheckCircle, Flame, Send, Volume2, Key,
-  Plus, Trash2, Edit, Save, UserPlus
+  Plus, Trash2, Edit, Save, UserPlus, RotateCcw, RefreshCw
 } from 'lucide-react';
 import { WasteDeposit, Citizen, RewardRedemption, Feedback, WasteType } from '../types';
 import { WASTE_CATEGORIES, decryptField, encryptField } from '../data';
@@ -21,6 +21,7 @@ interface AdminDashboardProps {
   onCancelRedemption: (redemptionId: string) => void;
   onPushSystemNotification: (title: string, message: string, type: 'pickup' | 'reward' | 'system') => void;
   onUpdateCitizens?: (citizens: Citizen[]) => void;
+  onResetWasteData?: () => void;
 }
 
 export default function AdminDashboard({
@@ -34,7 +35,8 @@ export default function AdminDashboard({
   onCompleteRedemption,
   onCancelRedemption,
   onPushSystemNotification,
-  onUpdateCitizens
+  onUpdateCitizens,
+  onResetWasteData
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'deposits' | 'rewards' | 'citizens' | 'feedback' | 'broadcast'>('overview');
   const [securityKey, setSecurityKey] = useState('RT005_SECRET');
@@ -60,6 +62,16 @@ export default function AdminDashboard({
 
   // Stateful delete confirmation
   const [citizenToDelete, setCitizenToDelete] = useState<Citizen | null>(null);
+
+  // Reset Waste Data State
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+
+  const handleConfirmResetWaste = () => {
+    if (onResetWasteData) {
+      onResetWasteData();
+    }
+    setIsResetModalOpen(false);
+  };
 
   const handleOpenAddCitizen = () => {
     setEditingCitizen(null);
@@ -255,7 +267,7 @@ export default function AdminDashboard({
       </div>
 
       {/* Admin Menu Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+      <div className="flex overflow-x-auto whitespace-nowrap scrollbar-none pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap gap-2 border-b border-slate-200">
         {[
           { id: 'overview', label: 'Ringkasan & Grafik', icon: BarChart3, alertCount: 0 },
           { id: 'deposits', label: 'Setoran Sampah', icon: ShieldAlert, alertCount: totalPendingDeposits },
@@ -270,7 +282,7 @@ export default function AdminDashboard({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-3.5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer border relative ${
+              className={`px-3.5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer border relative shrink-0 ${
                 isActive
                   ? 'bg-slate-900 text-white border-slate-950 shadow-sm'
                   : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
@@ -291,6 +303,25 @@ export default function AdminDashboard({
       {/* Overview/Charts Tab */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
+          {/* Action reset bar */}
+          <div className="bg-amber-50/60 border border-amber-100 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-start gap-2.5">
+              <div className="w-9 h-9 bg-amber-100 text-amber-800 rounded-xl flex items-center justify-center shrink-0">
+                <RefreshCw className="w-4 h-4 text-amber-700" />
+              </div>
+              <div>
+                <h5 className="text-xs font-bold text-slate-800">Manajemen Pembersihan Berkala</h5>
+                <p className="text-[11px] text-slate-500 mt-0.5">Admin RT dapat mereset data setoran sampah warga kembali ke nol (0) untuk memulai periode baru.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsResetModalOpen(true)}
+              className="py-1.5 px-3.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer transition-colors shrink-0"
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> Reset Data Sampah
+            </button>
+          </div>
+
           {/* Metric Cards Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
@@ -889,6 +920,45 @@ export default function AdminDashboard({
                   className="flex-1 py-2 px-4 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 cursor-pointer transition-colors"
                 >
                   Ya, Hapus
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Konfirmasi Reset Data Sampah */}
+      <AnimatePresence>
+        {isResetModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white border border-slate-200 rounded-3xl shadow-xl w-full max-w-sm overflow-hidden p-6 space-y-4"
+            >
+              <div className="text-center space-y-2">
+                <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+                  <RotateCcw className="w-6 h-6 text-rose-600" />
+                </div>
+                <h3 className="text-base font-extrabold text-slate-900">Reset Semua Data Sampah?</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Apakah Anda yakin ingin mereset semua data setoran sampah warga kembali ke <strong className="text-slate-800">nol (0)</strong>? Tindakan ini akan menghapus riwayat setoran sampah yang ada dan tidak dapat dibatalkan.
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsResetModalOpen(false)}
+                  className="flex-1 py-2 px-3 border border-slate-200 text-slate-500 rounded-xl text-xs font-bold hover:bg-slate-50 cursor-pointer transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleConfirmResetWaste}
+                  className="flex-1 py-2 px-4 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 cursor-pointer transition-colors"
+                >
+                  Ya, Reset Data
                 </button>
               </div>
             </motion.div>
